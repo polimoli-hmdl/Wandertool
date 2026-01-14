@@ -1,12 +1,12 @@
 import streamlit as st
 import pandas as pd
 import math
-import altair as alt  # <--- Das hat gefehlt!
+import altair as alt
 
 # --- KONFIGURATION ---
-st.set_page_config(page_title="Outdoor Gear Planner V6.1", page_icon="🏔️", layout="wide")
-st.title("🏔️ Outdoor Gear Planner V6.1")
-st.caption("Final Version: Logik-Fixes & Error-Handling")
+st.set_page_config(page_title="Outdoor Gear Planner V6.2", page_icon="🏔️", layout="wide")
+st.title("🏔️ Outdoor Gear Planner V6.2")
+st.caption("Final Version: Stabilisierte Formatierung")
 
 # --- 1. DATENBANK ---
 data = {
@@ -125,9 +125,12 @@ def add(kategorie, name_part=None, target=packliste, menge=1):
         item = subset.sort_values('Gewicht_g').iloc[0].to_dict()
         item['Menge'] = menge
         # Typ setzen
-        if target == worn_items: item['Typ'] = 'Am Körper'
-        elif target == consumables: item['Typ'] = 'Verbrauch'
-        else: item['Typ'] = 'Ausrüstung'
+        if target == worn_items: 
+            item['Typ'] = 'Am Körper'
+        elif target == consumables: 
+            item['Typ'] = 'Verbrauch'
+        else: 
+            item['Typ'] = 'Ausrüstung'
         target.append(item)
 
 # === A. BASICS ===
@@ -146,13 +149,20 @@ if temp < 5 or "Skitour" in tour_art:
 else:
     add('Headwear', 'Dünn', packliste)
 
-# === B. KLEIDUNG ===
-if "Skitour" in tour_art: add('Schuhe', 'Skischuhe', worn_items)
-elif "Hochtour" in tour_art: add('Schuhe', 'Bergstiefel', worn_items)
-else: add('Schuhe', 'Trailrunner', worn_items)
+# === B. KLEIDUNG (Hier war der Fehler!) ===
+if "Skitour" in tour_art:
+    add('Schuhe', 'Skischuhe', worn_items)
+elif "Hochtour" in tour_art:
+    add('Schuhe', 'Bergstiefel', worn_items)
+else:
+    add('Schuhe', 'Trailrunner', worn_items)
 
 add('Hose', 'Wanderhose', worn_items)
-add('Baselayer', 'Merino' if temp < 15 else 'Synthetik', worn_items)
+
+if temp < 15:
+    add('Baselayer', 'Merino', worn_items)
+else:
+    add('Baselayer', 'Synthetik', worn_items)
 
 if "Hochtour" in tour_art or "Skitour" in tour_art:
     add('Hose_Regen', 'Alpine', packliste)
@@ -160,15 +170,143 @@ else:
     add('Hose_Regen', 'Leichte', packliste)
 
 add('Shell', 'Hardshell', packliste)
-if temp < 15: add('Midlayer', 'Fleece', packliste)
-if temp < 5: add('Isolation', 'Daunenjacke', packliste)
+
+if temp < 15:
+    add('Midlayer', 'Fleece', packliste)
+if temp < 5:
+    add('Isolation', 'Daunenjacke', packliste)
 
 if dauer_tage > 1:
     add('Schuhe_Camp', 'Hüttenschuhe', packliste)
     add('Hygiene', 'Kulturbeutel', packliste)
     add('Hygiene', 'Handtuch', packliste)
     needed = math.ceil(dauer_tage / 2) - 1
-    if needed > 0: add('Baselayer', 'Merino', packliste, menge=needed)
+    if needed > 0:
+        add('Baselayer', 'Merino', packliste, menge=needed)
 
 # === C. TECHNIK & ALPINE ===
 if "Skitour" in tour_art:
+    add('Technik', 'LVS', packliste)
+    add('Technik', 'Felle', packliste)
+    add('Technik', 'Helm', packliste)
+
+if "Hochtour" in tour_art:
+    add('Technik', 'Steigeisen', packliste)
+    add('Technik', 'Eispickel', packliste)
+    add('Technik', 'Helm', packliste)
+
+if "Klettersteig" in tour_art:
+    add('Technik', 'Klettersteigset', packliste)
+    if not any(x['Name'] == 'Helm' for x in packliste):
+        add('Technik', 'Helm', packliste)
+
+if seil_wahl != "Kein Seil":
+    add('Seil', seil_wahl.split(' ')[0], packliste)
+
+if dauer_tage > 1:
+    if strom_zugang:
+        add('Elektronik', 'Ladegerät', packliste)
+    else:
+        if dauer_tage > 4:
+            add('Elektronik', '20k', packliste)
+        else:
+            add('Elektronik', '10k', packliste)
+
+# === D. KÜCHE & WASSER ===
+if mit_filter:
+    add('Küche', 'Filter', packliste)
+
+fill = 0
+while fill < wasser_kap:
+    if wasser_kap - fill >= 2.0:
+        add('Wasser_Behaelter', 'Trinkblase 2L', packliste)
+        fill += 2
+    else:
+        add('Wasser_Behaelter', 'Flasche', packliste)
+        fill += 1
+
+if schlafen_typ == "Zelt/Biwak": 
+    add('Küche', 'Kocher', packliste)
+    add('Küche', 'Topf', packliste)
+    add('Küche', 'Löffel', packliste)
+    gas_g = dauer_tage * 14
+    if gas_g <= 100:
+        add('Verbrauch_Gas', '100g', packliste)
+    else:
+        add('Verbrauch_Gas', '230g', packliste)
+
+# === E. SCHLAFEN ===
+if dauer_tage > 1:
+    if schlafen_typ == "Hütte":
+        add('Schlafen_Sack', 'Inlet', packliste)
+    else:
+        add('Schlafen_Shelter', 'Zelt', packliste)
+        
+        if temp < 5:
+            add('Schlafen_Matte', 'Isomatte', packliste)
+            add('Schlafen_Sack', 'Daunen', packliste)
+        else:
+            add('Schlafen_Matte', 'Schaummatte', packliste)
+            add('Schlafen_Sack', 'Sommer', packliste)
+            
+        add('Hygiene', 'Klappspaten', packliste)
+
+# === F. RUCKSACK ===
+if "Skitour" in tour_art:
+    add('Rucksack', 'Lawinenrucksack', packliste)
+else:
+    has_tent = any('Zelt' in x['Name'] for x in packliste)
+    has_rope = any('Seil' in x['Name'] for x in packliste)
+    
+    if dauer_tage == 1:
+        if has_rope or "Hochtour" in tour_art:
+            add('Rucksack', 'Tourenrucksack', packliste)
+        else:
+            add('Rucksack', 'Tagesrucksack', packliste)     
+    else:
+        if has_tent or dauer_tage > 5:
+            add('Rucksack', 'Trekkingrucksack', packliste)
+        else:
+            add('Rucksack', 'Tourenrucksack', packliste)
+
+# === G. VERBRAUCH ===
+consumables.append({
+    'Name': 'Wasser (Start)', 
+    'Kategorie': 'Verbrauch_Wasser', 
+    'Gewicht_g': wasser_kap * 1000, 
+    'Menge': 1, 
+    'Typ': 'Verbrauch'
+})
+
+if dauer_tage > 0:
+    consumables.append({
+        'Name': 'Essen', 
+        'Kategorie': 'Verbrauch_Essen',
+        'Gewicht_g': 700, 
+        'Menge': dauer_tage, 
+        'Typ': 'Verbrauch'
+    })
+
+# === OUTPUT ===
+df_res = pd.DataFrame(packliste + worn_items + consumables)
+
+if not df_res.empty:
+    df_res['Gesamt'] = df_res['Gewicht_g'] * df_res['Menge']
+    
+    st.divider()
+    cols = st.columns(4)
+    cols[0].metric("🎒 Rucksack", f"{df_res[df_res['Typ']=='Ausrüstung']['Gesamt'].sum()/1000:.2f} kg")
+    cols[1].metric("💧 Verbrauch", f"{df_res[df_res['Typ']=='Verbrauch']['Gesamt'].sum()/1000:.2f} kg")
+    cols[2].metric("👕 Am Körper", f"{df_res[df_res['Typ']=='Am Körper']['Gesamt'].sum()/1000:.2f} kg")
+    cols[3].metric("⚙️ System Total", f"{df_res['Gesamt'].sum()/1000:.2f} kg")
+    
+    t1, t2 = st.tabs(["Liste", "Verteilung"])
+    with t1:
+        st.dataframe(df_res[['Menge', 'Name', 'Typ', 'Gesamt']], use_container_width=True)
+    with t2:
+        c = alt.Chart(df_res).mark_arc().encode(
+            theta='Gesamt', color='Typ', tooltip=['Name', 'Gesamt']
+        )
+        st.altair_chart(c, use_container_width=True)
+else:
+    st.warning("Keine Ausrüstung ausgewählt.")
