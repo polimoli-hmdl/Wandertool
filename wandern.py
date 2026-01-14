@@ -190,7 +190,7 @@ if "Skitour" in tour_art:
 
 # Immer dabei
 add_item('Kategorie', 'Technik', name_contains="Wanderstöcke", target_list=worn_items) # Oder im Rucksack, je nach Geschmack
-add_item('Hygiene', 'Klappspaten') # LNT Prinzip ;)
+add_item('Kategorie', 'Hygiene', name_contains='Klappspaten') # LNT Prinzip ;)
 
 # --- D. KÜCHE ---
 if kochen:
