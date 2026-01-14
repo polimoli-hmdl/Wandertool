@@ -267,10 +267,24 @@ else:
             add('Rucksack', 'Tourenrucksack 45L', packliste)
 
 # === VERBRAUCH ===
-consumables.append({'Name':'Wasser', 'Gewicht_g':wasser_kap*1000, 'Menge':1, 'Typ':'Verbrauch'})
-if dauer_tage > 0:
-    consumables.append({'Name':'Essen', 'Gewicht_g':700, 'Menge':dauer_tage, 'Typ':'Verbrauch'})
+# 1. Wasser Startgewicht (Kapazität * 1000g)
+consumables.append({
+    'Name': 'Wasser (Start)', 
+    'Kategorie': 'Wasser_Behaelter', # Damit keine leeren Felder entstehen
+    'Gewicht_g': wasser_kap * 1000, 
+    'Menge': 1, 
+    'Typ': 'Verbrauch'
+})
 
+# 2. Essen (Nur wenn Dauer > 0)
+if dauer_tage > 0:
+    consumables.append({
+        'Name': 'Essen', 
+        'Kategorie': 'Verbrauch_Essen',
+        'Gewicht_g': 700, # Fixwert oder Variable essen_pro_tag nutzen
+        'Menge': dauer_tage, 
+        'Typ': 'Verbrauch'
+    })
 # === OUTPUT ===
 df_res = pd.DataFrame(packliste + worn_items + consumables)
 if not df_res.empty:
