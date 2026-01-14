@@ -1,282 +1,343 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
+import math
 
-# --- TITEL & KONFIGURATION ---
-st.set_page_config(page_title="Outdoor Gear Planner V4", page_icon="🏔️", layout="wide")
-st.title("🏔️ Outdoor Gear Planner V4")
-st.caption("Mit detaillierter Verpflegungs- und Wasserlogik")
+# --- KONFIGURATION ---
+st.set_page_config(page_title="Outdoor Gear Planner V5 (Expert)", page_icon="🏔️", layout="wide")
+st.title("🏔️ Outdoor Gear Planner V5 (Expert Logic)")
+st.caption("Optimiert für Hochtouren, Hütten & Autarkie-Level")
 
-# --- 1. DATENBANK (Erweitert um Wasserfilter) ---
+# --- 1. DATENBANK (Expert Update) ---
 data = {
     'Name': [
-        'Merino Shirt', 'Synthetik Shirt', 'Fleece Pulli', 'Daunenjacke', 'Hardshell Jacke', 
-        'Wanderhose', 'Softshellhose', 'Hardshellhose',
-        'Leichte Wanderschuhe', 'Bergstiefel (Steigeisenfest)', 'Skischuhe',
+        # Kleidung Oben
+        'Merino Shirt (Langarm)', 'Synthetik Shirt (Kurz)', 
+        'Fleece Pulli (Midlayer)', 'Daunenjacke (Isolation)', 'Hardshell Jacke (Wetter)',
+        
+        # Kleidung Unten
+        'Wanderhose (Softshell)', 'Leichte Regenhose (Backup)', 'Alpine Hardshellhose (Robust)',
+        'Hüttenschuhe/Clogs',
+        
+        # Schuhe
+        'Trailrunner', 'Bergstiefel (B/C)', 'Skischuhe',
+        
+        # Rucksack
         'Rucksack 40L', 'Rucksack 60L', 'Lawinenrucksack',
-        'Daunenschlafsack -5°C', 'Sommerschlafsack +10°C', 
+        
+        # Schlafen
+        'Daunenschlafsack -5°C', 'Sommerschlafsack +10°C', 'Seiden-Inlet (Hüttenschlafsack)',
         'Isomatte (R-Wert 4)', 'Schaummatte (R-Wert 2)',
         'Zelt 2P', 'Biwacksack',
-        'Gaskocher', 'Topfset Titan', 'Spork', 'Klappspaten',
-        'Steigeisen', 'Eispickel', 'Klettersteigset', 'Helm', 'LVS-Set', 'Wanderstöcke',
-        'Gaskartusche Klein (100g Gas)', 'Gaskartusche Mittel (230g Gas)', 
-        'Wasserflasche 1L (Plastik)', 'Trinkblase 2L',
-        # NEU:
-        'Wasserfilter (Squeeze)', 'Chemie-Tabletten'
+        
+        # Küche
+        'Gaskocher (Ultralight)', 'Topfset Titan 700ml', 'Langer Löffel', 
+        'Wasserfilter (Squeeze)',
+        'Gaskartusche 100g', 'Gaskartusche 230g',
+        
+        # Wasserbehälter
+        'Wasserflasche 1L (PET)', 'Trinkblase 2L', 'Trinkblase 3L',
+        
+        # Technik & Gletscher
+        'Steigeisen', 'Eispickel', 'Klettersteigset', 'Kletterhelm', 'LVS-Set', 
+        'Wanderstöcke (Paar)',
+        'Einfachseil 30m', 'Einfachseil 50m',
+        'Powerbank 10.000mAh', 'Powerbank 20.000mAh', 'USB-Ladegerät (Dual)',
+        'Klappspaten'
     ],
     'Kategorie': [
-        'Baselayer', 'Baselayer', 'Midlayer', 'Isolation', 'Shell', 
-        'Hose', 'Hose', 'Hose',
+        'Baselayer', 'Baselayer', 
+        'Midlayer', 'Isolation', 'Shell',
+        
+        'Hose', 'Hose_Regen', 'Hose_Regen', 
+        'Schuhe_Camp',
+        
         'Schuhe', 'Schuhe', 'Schuhe',
+        
         'Rucksack', 'Rucksack', 'Rucksack',
-        'Schlafen_Sack', 'Schlafen_Sack', 
+        
+        'Schlafen_Sack', 'Schlafen_Sack', 'Schlafen_Sack',
         'Schlafen_Matte', 'Schlafen_Matte',
         'Schlafen_Shelter', 'Schlafen_Shelter',
-        'Küche', 'Küche', 'Küche', 'Hygiene',
-        'Technik', 'Technik', 'Technik', 'Technik', 'Technik', 'Technik',
+        
+        'Küche', 'Küche', 'Küche', 
+        'Küche',
         'Verbrauch_Gas', 'Verbrauch_Gas',
-        'Wasser_Behaelter', 'Wasser_Behaelter',
-        'Küche', 'Küche'
+        
+        'Wasser_Behaelter', 'Wasser_Behaelter', 'Wasser_Behaelter',
+        
+        'Technik', 'Technik', 'Technik', 'Technik', 'Technik', 
+        'Technik',
+        'Seil', 'Seil',
+        'Elektronik', 'Elektronik', 'Elektronik',
+        'Hygiene'
     ],
     'Gewicht_g': [
-        150, 130, 300, 350, 250, 
-        400, 500, 300,
-        800, 1400, 3000,
-        1200, 1600, 2500,
-        900, 500, 
-        600, 300,
-        1500, 300,
-        100, 200, 15, 150,
-        800, 400, 500, 300, 700, 400,
-        200, 380, 
-        40, 150,
-        80, 20 # Filter leicht, Tabletten sehr leicht
+        200, 130, 
+        300, 350, 300,
+        
+        400, 150, 450, 
+        200,
+        
+        700, 1400, 3000,
+        
+        1100, 1600, 2500,
+        
+        900, 600, 130, 
+        600, 350, 
+        1400, 250,
+        
+        80, 150, 15, 
+        80,
+        200, 380,
+        
+        40, 150, 170,
+        
+        850, 450, 500, 300, 700, 
+        450,
+        2100, 3500,
+        200, 400, 80,
+        150
     ],
-    'Temp_Min': [20, 25, 15, 5, 99, 99, 5, -10, 99, 99, 99, 99, 99, 99, -5, 10, -5, 10, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99],
-    'Tags': ['Wandern']*36 
+    'Temp_Limit': [15, 25, 10, -5, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, -5, 10, 99, -5, 10, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
 }
 df = pd.DataFrame(data)
 
-# --- 2. SIDEBAR - EINGABEN ---
+# --- 2. SIDEBAR EINGABEN ---
 with st.sidebar:
-    st.header("🗺️ Tour-Parameter")
-    dauer_tage = st.number_input("Dauer (Tage)", min_value=1, value=3)
-    temp = st.slider("Erwartete Temp (°C)", -20, 35, 15)
-    wetter = st.selectbox("Wetter", ["Sonnig", "Wechselhaft", "Regen/Schnee"])
+    st.header("🗺️ Tour-Settings")
+    dauer_tage = st.number_input("Dauer (Tage)", 1, 30, 3)
+    temp = st.slider("Tiefsttemperatur (°C)", -25, 30, 5)
     
-    tour_art = st.multiselect(
-        "Art der Tour",
-        ["Wandern", "Hochtour (Gletscher)", "Klettersteig", "Skitour"],
-        default=["Wandern"]
-    )
+    tour_art = st.multiselect("Tour-Typ", 
+                             ["Wandern", "Hochtour", "Klettersteig", "Skitour"],
+                             default=["Wandern"])
     
-    st.header("💧 Wasser & Quellen")
-    # NEU: Wasserquellen Logik
-    quellen_status = st.select_slider(
-        "Verfügbarkeit Wasserquellen", 
-        options=["Überall (Hütten/Bäche)", "Selten (1x tägl.)", "Keine / Trocken"]
-    )
-    mit_filter = st.checkbox("Wasserfilter einpacken?", value=True)
+    st.subheader("🏠 Schlafen & Wohnen")
+    schlafen_typ = st.selectbox("Übernachtung", ["Hütte (Bewirtschaftet)", "Zelt/Biwak"])
     
-    # Automatische Empfehlung für Tragekapazität berechnen
-    empfohlene_kapazitaet = 1.5 # Standard
-    if quellen_status == "Selten (1x tägl.)":
-        empfohlene_kapazitaet = 3.0
-    elif quellen_status == "Keine / Trocken":
-        empfohlene_kapazitaet = 4.0 # Mehr geht kaum zu tragen
+    st.subheader("⚡ Technik & Seil")
+    strom_zugang = st.checkbox("Zugang zu Steckdose/Strom?", value=False, help="In Hütten oft ja, im Zelt nein.")
+    seil_wahl = st.selectbox("Seil nötig?", ["Kein Seil", "30m Einfachseil", "50m Einfachseil"])
+
+    st.subheader("💧 Verpflegung")
+    quellen_status = st.select_slider("Wasserquellen", options=["Viele", "Selten", "Keine"])
+    essen_pro_tag = 700 # Default Fixwert, da User "Kalt frühstückt" sparen wir Gas, nicht Essen-Gewicht
+
+    # Wasser-Empfehlung
+    empf_wasser = 2.0
+    if quellen_status == "Selten": empf_wasser = 3.0
+    if quellen_status == "Keine": empf_wasser = 4.5
+    if "Hochtour" in tour_art: empf_wasser += 0.5
     
-    st.info(f"Empfohlene Trage-Kapazität für diese Quellen: {empfohlene_kapazitaet} L")
-    wasser_kapazitaet = st.slider("Tatsächliche Kapazität (Liter)", 0.5, 6.0, empfohlene_kapazitaet, step=0.5)
+    wasser_kapazitaet = st.slider(f"Wasserkapazität (Empf: {empf_wasser}L)", 0.5, 6.0, empf_wasser, 0.5)
 
-    st.header("🍱 Essen & Kochen")
-    kochen = st.checkbox("Gaskocher mitnehmen?", value=True)
-    # Essen Slider
-    essen_pro_tag = st.slider("Essen pro Tag (Gramm)", 400, 1200, 700)
+# --- 3. LOGIK ENGINE ---
 
+packliste = []     # Rucksack
+worn_items = []    # Am Körper
+consumables = []   # Verbrauch
 
-# --- 3. GUIDES & BERECHNUNGEN (NEU) ---
-
-# Kalorienbedarf Schätzung (Aktivitätsfaktor Wandern ca 1.5 - 2.0)
-# Annahme: Durchschnittsmann/frau
-kcal_base = 2500 # Aktivumsatz Minimum
-if "Hochtour (Gletscher)" in tour_art or "Skitour" in tour_art:
-    kcal_base += 1000 # Anstrengender
-
-kcal_min = kcal_base * dauer_tage
-kcal_comf = (kcal_base + 800) * dauer_tage # Mehr Snacks = bessere Laune
-
-# Wasserbedarf (Trinken pro Tag, nicht Tragen!)
-# Basis 2.5L + 0.1L pro Grad über 20°C
-wasser_bedarf_daily = 2.5
-if temp > 20:
-    wasser_bedarf_daily += (temp - 20) * 0.1
-if "Hochtour (Gletscher)" in tour_art:
-    wasser_bedarf_daily += 0.5 # Höhe und trockene Luft
-
-wasser_total_min = wasser_bedarf_daily * dauer_tage
-
-# GUI Ausgabe Guide
-with st.expander("📊 Verpflegungs-Guide (Deine Zielwerte)", expanded=True):
-    col_g1, col_g2 = st.columns(2)
-    with col_g1:
-        st.markdown("**🔥 Kalorien (Gesamttour)**")
-        st.write(f"Existenzminimum: **{kcal_min:,.0f} kcal**")
-        st.write(f"Komfort/Satt: **{kcal_comf:,.0f} kcal**")
-        st.caption("Tipp: Nüsse und Schokolade haben die höchste Energiedichte.")
-    with col_g2:
-        st.markdown("**💧 Wasserbedarf (Trinken)**")
-        st.write(f"Täglicher Bedarf ca.: **{wasser_bedarf_daily:.1f} Liter**")
-        st.write(f"Muss getragen werden: **{wasser_kapazitaet} Liter** (Rest filtern/auffüllen)")
-        if quellen_status == "Keine / Trocken" and wasser_kapazitaet < wasser_bedarf_daily:
-            st.error("ACHTUNG: Du kannst weniger tragen als du pro Tag brauchst, aber es gibt keine Quellen!")
-
-# --- 4. LOGIK-ENGINE ---
-packliste = [] 
-worn_items = []
-consumables = []
-
-def add_item(filter_col, filter_val, sort_col='Gewicht_g', asc=True, target_list=packliste, menge=1, name_contains=None):
-    candidates = df[df[filter_col] == filter_val]
-    if name_contains:
-        candidates = candidates[candidates['Name'].str.contains(name_contains)]
+def add(kategorie, name_part=None, target=packliste, menge=1, min_temp=None):
+    """Smarte Auswahlfunktion"""
+    subset = df[df['Kategorie'] == kategorie]
+    if name_part:
+        subset = subset[subset['Name'].str.contains(name_part, case=False)]
+    if min_temp is not None:
+        # Filter items that can handle the temp (Temp_Limit <= user_temp)
+        # Hier vereinfacht: Wir suchen einfach das passende Item
+        pass
     
-    if not candidates.empty:
-        best_item = candidates.sort_values(by=sort_col, ascending=asc).iloc[0].to_dict()
-        best_item['Menge'] = menge
-        if target_list == consumables:
-            best_item['Typ'] = 'Verbrauch'
-        elif target_list == worn_items:
-            best_item['Typ'] = 'Am Körper'
-        else:
-            best_item['Typ'] = 'Ausrüstung'
-        target_list.append(best_item)
+    if not subset.empty:
+        # Nimm das leichteste Item, das passt
+        item = subset.sort_values('Gewicht_g').iloc[0].to_dict()
+        item['Menge'] = menge
+        # Typ Zuweisung für Charts
+        if target == worn_items: item['Typ'] = 'Am Körper'
+        elif target == consumables: item['Typ'] = 'Verbrauch'
+        else: item['Typ'] = 'Ausrüstung'
+        
+        target.append(item)
 
-# --- A. STANDARD EQUIPMENT ---
-# Schuhe & Kleidung
+# === A. KLEIDUNG & SCHUHE ===
+
+# 1. Schuhe (Am Körper)
 if "Skitour" in tour_art:
-    add_item('Kategorie', 'Schuhe', name_contains="Skischuhe", target_list=worn_items)
-elif "Hochtour (Gletscher)" in tour_art:
-    add_item('Kategorie', 'Schuhe', name_contains="Bergstiefel", target_list=worn_items)
+    add('Schuhe', 'Skischuhe', worn_items)
+elif "Hochtour" in tour_art:
+    add('Schuhe', 'Bergstiefel', worn_items)
 else:
-    add_item('Kategorie', 'Schuhe', name_contains="Leichte", target_list=worn_items)
+    add('Schuhe', 'Trailrunner', worn_items)
 
-add_item('Kategorie', 'Hose', name_contains="Softshell" if temp < 5 else "Wanderhose", target_list=worn_items)
-add_item('Kategorie', 'Baselayer', name_contains="Synthetik" if temp > 15 else "Merino", target_list=worn_items)
+# 2. Hose (Am Körper)
+add('Hose', 'Wanderhose', worn_items)
 
+# 3. Regenhose (Im Rucksack)
+# User Wunsch: Bei Hochtour "Alpine Hardshellhose" statt "Leichte Regenhose"
+if "Hochtour" in tour_art or "Skitour" in tour_art:
+    add('Hose_Regen', 'Alpine Hardshell', packliste)
+else:
+    add('Hose_Regen', 'Leichte Regen', packliste)
+
+# 4. Baselayer (Wechselwäsche Logik)
+# Einer am Körper
+add('Baselayer', 'Merino' if temp < 15 else 'Synthetik', worn_items)
+
+# Wechselwäsche: Alle 2 Tage frisch
 if dauer_tage > 1:
-    menge_shirts = int(dauer_tage / 3)
-    if menge_shirts >= 1:
-        add_item('Kategorie', 'Baselayer', name_contains="Merino", menge=menge_shirts)
+    total_needed = math.ceil(dauer_tage / 2)
+    extras = total_needed - 1 # Einen hat man an
+    if extras > 0:
+        add('Baselayer', 'Merino', packliste, menge=extras)
 
-if temp < 15: add_item('Kategorie', 'Midlayer')
-if temp < 5: add_item('Kategorie', 'Isolation')
-if wetter != "Sonnig" or temp < 5: add_item('Kategorie', 'Shell')
+# 5. Layers (Fleece & Isolation)
+# User: "Fleece immer Midlayer, Daune Isolation. Bei sehr kalt (<0) beides."
+if temp < 15:
+    add('Midlayer', 'Fleece', packliste) # Immer dabei wenn < 15
+if temp < 10:
+    add('Isolation', 'Daunenjacke', packliste) # Daune ab < 10
 
-# Schlafen
-add_item('Kategorie', 'Schlafen_Sack', sort_col='Gewicht_g')
-add_item('Kategorie', 'Schlafen_Matte')
-add_item('Kategorie', 'Schlafen_Shelter', name_contains="Zelt")
+# 6. Hardshell Jacke (Immer dabei außer sicher Hochsommer)
+add('Shell', 'Hardshell', packliste)
 
-# Technik
-if "Hochtour (Gletscher)" in tour_art:
-    add_item('Kategorie', 'Technik', name_contains="Steigeisen")
-    add_item('Kategorie', 'Technik', name_contains="Pickel")
-    add_item('Kategorie', 'Technik', name_contains="Helm")
-add_item('Kategorie', 'Hygiene', name_contains="Klappspaten")
-add_item('Kategorie', 'Technik', name_contains="Wanderstöcke", target_list=worn_items)
+# 7. Camp-Schuhe
+if dauer_tage > 1:
+    add('Schuhe_Camp', 'Hüttenschuhe', packliste)
 
-# --- B. KÜCHE & VERBRAUCH ---
+# === B. SCHLAFEN ===
 
-# NEU: Wasserfilter
-if mit_filter:
-    add_item('Kategorie', 'Küche', name_contains="Filter")
-
-if kochen:
-    add_item('Kategorie', 'Küche', name_contains="Gaskocher")
-    add_item('Kategorie', 'Küche', name_contains="Topf")
-    add_item('Kategorie', 'Küche', name_contains="Spork")
-    
-    # NEU: Gas Berechnung (14g pro Tag)
-    gas_bedarf = dauer_tage * 14
-    
-    if gas_bedarf <= 100:
-        add_item('Kategorie', 'Verbrauch_Gas', name_contains="100g")
+if schlafen_typ == "Hütte (Bewirtschaftet)":
+    # User: "Nur Hüttenschlafsack Seide"
+    add('Schlafen_Sack', 'Seiden-Inlet', packliste)
+    # Keine Matte, kein Zelt
+else:
+    # Zelt/Biwak
+    add('Schlafen_Shelter', 'Zelt', packliste)
+    add('Schlafen_Matte', 'Isomatte' if temp < 5 else 'Schaummatte', packliste)
+    # Schlafsack nach Temp
+    if temp < 5:
+        add('Schlafen_Sack', 'Daunenschlafsack', packliste)
     else:
-        add_item('Kategorie', 'Verbrauch_Gas', name_contains="230g")
+        add('Schlafen_Sack', 'Sommerschlafsack', packliste)
 
-# --- C. ESSEN & WASSER BEHÄLTER ---
+# === C. TECHNIK & SEIL ===
 
-# Behälter-Logik (Flaschen vs Blase)
-# Wir füllen auf bis die Kapazität erreicht ist
-current_cap = 0
-while current_cap < wasser_kapazitaet:
-    if wasser_kapazitaet - current_cap >= 2.0:
-        add_item('Kategorie', 'Wasser_Behaelter', name_contains="Trinkblase")
-        current_cap += 2.0
+# Strom & Powerbank
+if strom_zugang:
+    add('Elektronik', 'Ladegerät', packliste)
+    # Evtl kleines Kabel, Gewicht vernachlässigbar
+else:
+    # Keine Steckdose -> Powerbank berechnen
+    # Annahme: 3000mAh pro Tag (Smartphone + Navi)
+    bedarf_mah = dauer_tage * 3000
+    if bedarf_mah > 10000:
+        add('Elektronik', '20.000', packliste)
     else:
-        add_item('Kategorie', 'Wasser_Behaelter', name_contains="Flasche")
-        current_cap += 1.0
+        add('Elektronik', '10.000', packliste)
 
-# Wasser INHALT (Startgewicht)
+# Seil (User Wahl)
+if seil_wahl == "30m Einfachseil":
+    add('Seil', '30m', packliste)
+elif seil_wahl == "50m Einfachseil":
+    add('Seil', '50m', packliste)
+
+# Alpine Hardware
+if "Hochtour" in tour_art:
+    add('Technik', 'Steigeisen', packliste)
+    add('Technik', 'Eispickel', packliste)
+    add('Technik', 'Helm', packliste)
+
+if "Klettersteig" in tour_art:
+    add('Technik', 'Klettersteigset', packliste)
+    # Helm nur einmal hinzufügen
+    if not any(d['Name'] == 'Kletterhelm' for d in packliste):
+        add('Technik', 'Helm', packliste)
+
+if "Skitour" in tour_art:
+    add('Technik', 'LVS', packliste) # Schaufel/Sonde hier impliziert im Set
+
+add('Technik', 'Wanderstöcke', worn_items)
+add('Hygiene', 'Klappspaten', packliste)
+
+# === D. KÜCHE & WASSER ===
+
+add('Küche', 'Wasserfilter', packliste) # User: Immer Filter, keine Tabletten
+
+# Wasser Behälter
+cap_fill = 0
+while cap_fill < wasser_kapazitaet:
+    if wasser_kapazitaet - cap_fill >= 2.0:
+        add('Wasser_Behaelter', 'Trinkblase 2L', packliste)
+        cap_fill += 2.0
+    else:
+        add('Wasser_Behaelter', 'Flasche', packliste)
+        cap_fill += 1.0
+
+# Kochen (nur wenn nicht Hütte oder explizit gewünscht)
+# Annahme: Bei Hütte meist HP, aber manche kochen trotzdem.
+# Wir machen es abhängig vom Schlaf-Typ: Zelt = Kochen. Hütte = Kein Kochen (Vereinfachung)
+if schlafen_typ == "Zelt/Biwak":
+    add('Küche', 'Kocher', packliste)
+    add('Küche', 'Topf', packliste)
+    add('Küche', 'Löffel', packliste)
+    
+    # Gas: 14g pro Tag (Kaltes Frühstück)
+    gas_total = dauer_tage * 14
+    if gas_total <= 100:
+        add('Verbrauch_Gas', '100g', packliste)
+    else:
+        add('Verbrauch_Gas', '230g', packliste)
+
+# Verbrauch (Gewicht)
 consumables.append({
-    'Name': 'Wasser (Startfüllung)',
-    'Kategorie': 'Verbrauch_Wasser',
-    'Gewicht_g': wasser_kapazitaet * 1000, 
-    'Menge': 1,
-    'Typ': 'Verbrauch'
+    'Name': 'Wasser (Start)', 'Kategorie': 'Wasser', 
+    'Gewicht_g': wasser_kapazitaet * 1000, 'Menge': 1, 'Typ': 'Verbrauch'
+})
+consumables.append({
+    'Name': 'Essen (Riegel/Dinner)', 'Kategorie': 'Essen',
+    'Gewicht_g': essen_pro_tag, 'Menge': dauer_tage, 'Typ': 'Verbrauch'
 })
 
-# Essen
-consumables.append({
-    'Name': f'Essen ({essen_pro_tag}g/Tag)',
-    'Kategorie': 'Verbrauch_Essen',
-    'Gewicht_g': essen_pro_tag, 
-    'Menge': dauer_tage,
-    'Typ': 'Verbrauch'
-})
+# === OUTPUT ===
 
-# --- D. RUCKSACK ---
-rucksack_typ = "40L"
-if dauer_tage > 3 or (kochen and dauer_tage > 1) or wasser_kapazitaet > 3:
-    rucksack_typ = "60L"
-add_item('Kategorie', 'Rucksack', name_contains=rucksack_typ)
-
-
-# --- 5. VISUALISIERUNG ---
-st.divider()
-
+# Daten zusammenführen
 all_items = packliste + worn_items + consumables
-df_all = pd.DataFrame(all_items)
-df_all['Total_Gewicht_g'] = df_all['Gewicht_g'] * df_all['Menge']
+df_res = pd.DataFrame(all_items)
+df_res['Gesamtgewicht'] = df_res['Gewicht_g'] * df_res['Menge']
 
-base_weight = df_all[(df_all['Typ'] == 'Ausrüstung')]['Total_Gewicht_g'].sum()
-consumable_weight = df_all[(df_all['Typ'] == 'Verbrauch')]['Total_Gewicht_g'].sum()
-worn_weight = df_all[(df_all['Typ'] == 'Am Körper')]['Total_Gewicht_g'].sum()
-total_skin_out = base_weight + consumable_weight + worn_weight
+# Metriken
+base_w = df_res[df_res['Typ'] == 'Ausrüstung']['Gesamtgewicht'].sum()
+worn_w = df_res[df_res['Typ'] == 'Am Körper']['Gesamtgewicht'].sum()
+cons_w = df_res[df_res['Typ'] == 'Verbrauch']['Gesamtgewicht'].sum()
+total = base_w + worn_w + cons_w
 
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("⚖️ Start-Gewicht", f"{total_skin_out/1000:.1f} kg")
-c2.metric("🎒 Base Weight", f"{base_weight/1000:.1f} kg")
-c3.metric("🥪 Verbrauch", f"{consumable_weight/1000:.1f} kg")
-c4.metric("👕 Am Körper", f"{worn_weight/1000:.1f} kg")
+st.divider()
+c1, c2, c3 = st.columns(3)
+c1.metric("🎒 Base Weight (Rucksack)", f"{base_w/1000:.2f} kg")
+c2.metric("👕 Worn Weight (Körper)", f"{worn_w/1000:.2f} kg")
+c3.metric("💧 Verbrauch (Start)", f"{cons_w/1000:.2f} kg")
 
-# Chart
-chart_data = df_all.groupby('Typ')['Total_Gewicht_g'].sum().reset_index()
-base = alt.Chart(chart_data).encode(theta=alt.Theta("Total_Gewicht_g", stack=True))
-pie = base.mark_arc(outerRadius=100).encode(
-    color=alt.Color("Typ", scale=alt.Scale(domain=['Ausrüstung', 'Verbrauch', 'Am Körper'], range=['#3b8ed0', '#e04f5f', '#9e9e9e'])),
-    tooltip=["Typ", "Total_Gewicht_g"]
-)
-st.altair_chart(pie, use_container_width=True)
+# Tabs für saubere Trennung
+tab_pack, tab_worn, tab_cons = st.tabs(["🎒 Rucksack (Ausrüstung)", "👕 Am Körper", "🥪 Verbrauch"])
 
-# Listen
-t1, t2 = st.tabs(["Details & Listen", "Debug/Datenbank"])
-with t1:
-    st.subheader("Deine Packliste")
-    st.dataframe(df_all[['Menge', 'Name', 'Typ', 'Total_Gewicht_g']], use_container_width=True)
-    
-    if quellen_status == "Keine / Trocken":
-        st.error("WARNUNG: Du hast angegeben, dass es KEINE Wasserquellen gibt. Dein 'Verbrauch'-Gewicht sinkt zwar, aber du musst ALLES Wasser von Anfang an tragen (falls deine Kapazität reicht). Wenn deine Kapazität (im Slider) kleiner ist als der Gesamtbedarf, wirst du durstig!")
+def show_table(filter_typ):
+    subset = df_res[df_res['Typ'] == filter_typ].copy()
+    if not subset.empty:
+        st.dataframe(
+            subset[['Menge', 'Name', 'Gewicht_g', 'Gesamtgewicht']], 
+            use_container_width=True,
+            hide_index=True
+        )
+    else:
+        st.info("Leer")
 
-with t2:
-    st.dataframe(df)
+with tab_pack:
+    show_table('Ausrüstung')
+    st.caption("Das 'Base Weight' enthält alles im Rucksack außer Essen, Wasser und Brennstoff.")
+
+with tab_worn:
+    show_table('Am Körper')
+
+with tab_cons:
+    show_table('Verbrauch')
+    st.caption("Dieses Gewicht nimmt während der Tour jeden Tag ab.")
